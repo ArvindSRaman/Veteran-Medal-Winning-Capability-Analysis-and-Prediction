@@ -1,0 +1,85 @@
+---
+title: "Olympic Veteran's Medal winning capability Analysis and Prediction"
+author: "ARVIND SHANKAR RAMAN"
+date: "November 17, 2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+
+library(dplyr)
+
+
+#Importing the Oympic data set to R
+Oly <- read.csv('C:/Users/91909/Documents/BA With R Class Notes/R Project/120-years-of-olympic-history-athletes-and-results/athlete_events.csv')
+
+#Creating a column "ttt" which is a uniue combination of Players name and event. 
+NewOly <- Oly %>% mutate(ttt=paste(Oly$Name,Oly$Event))
+NewOly2 <- NewOly %>% group_by(ttt)
+
+#Removing players with only 2 Olympic appearances and keeping the rest of the data.
+NewOly3 <- NewOly2 %>% filter(n()>2)
+NewOly3 <- NewOly3 %>% mutate( Medal=as.character(Medal))
+
+#User defined function to categorize medals as 1 and non-medals(NA) as 0
+NewX<-function(x){
+  num = 0;
+  if (!is.na(x == "Bronze" | x == "Gold" | x == "Silver"))
+  { 
+    return(num = num + 1);
+  }
+  else return(num)
+} 
+
+#Creating a new column where if player has won a medal then 1 else 0
+NewOly4 <- NewOly3 %>% mutate(NX=sapply(Medal,NewX))
+
+#The 1st two performances of veterans are not relevant to our analysis.
+#so to remove that from the dataset,we are indexing each player's appearances and removing their first two appearances.
+
+#To build Index
+new.df <- NewOly4 %>% 
+   group_by(ttt) %>% 
+   mutate(Index=1:n())
+
+#Removing the first two appearances based on index value. 
+new.df1 <- filter(new.df,Index >= 3)
+
+#Trimming the data by considering only columns that are required.
+new.df2<-new.df1[c(1,2,3,8,9,13,14,15,17,18)]
+
+#performing logistic regression
+logistic <- glm(NX~Event,data = new.df2,family = "binomial")
+View(logistic)
+summary(logistic)
+
+#Viewing the final model of Events vs medals which are highly significant 
+Logsum<-data.frame(summary(logistic)$coef[summary(logistic)$coef[,4] <= .05, 4])
+View(Logsum)
+
+#So from the logistic regression model, we have a total of 99 Events where veterans have a significantlyu higher chance of winning when compared to new comers/ amateurs.
+
+
+ ```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
